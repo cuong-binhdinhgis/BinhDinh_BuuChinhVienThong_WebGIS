@@ -53,304 +53,304 @@ require([
     SystemStatusObject, BufferingObjects,
     ExpandTools, QueryMethods, Popup, Measure, TimViTriBTSThongMinh, Statistics, MeasureArea, VungPhuBTS,
     PaneManager, VungPhuBTSTools, domConstruct) {
-        esriRequest('/session', {
-            method: 'post'
-        }).then(function (resultRequest) {
-            var map = new Map();
-            mapconfigs.basemap.id = constName.BASEMAP;
-            var baseMap = new MapImageLayer({
-                url: "http://ditagis.com:6080/arcgis/rest/services/BinhDinh_BuuChinhVienThong/HeThongVienThong_DuLieuNen/MapServer",
-                visible: false,
-                id: constName.BASEMAP,
-                title: 'Dữ liệu nền Bình Định',
-                copyright: 'Bản đồ biên tập bởi Trung tâm DITAGIS',
-            });
-            var osm = new OpenStreetMap({
-                title: 'OpenStreetMap',
-                id: constName.OSM,
-                // visible: false
-            });
-            map.add(osm);
-            map.add(baseMap);
-            let worldimagery = new WebTileLayer({
-                id: 'worldimagery',
-                urlTemplate: 'https://mt1.google.com/vt/lyrs=y&x={col}&y={row}&z={level}',
-                title: 'Ảnh vệ tinh',
-                visible: false,
-            });
-            map.add(worldimagery);
-            switchBasemap([baseMap, osm, worldimagery])
+    esriRequest('/session', {
+        method: 'post'
+    }).then(function (resultRequest) {
+        var map = new Map();
+        mapconfigs.basemap.id = constName.BASEMAP;
+        var baseMap = new MapImageLayer({
+            url: "http://103.74.116.95:6080/arcgis/rest/services/BinhDinh_BuuChinhVienThong/HeThongVienThong_DuLieuNen/MapServer",
+            visible: false,
+            id: constName.BASEMAP,
+            title: 'Dữ liệu nền Bình Định',
+            copyright: 'Bản đồ biên tập bởi Trung tâm DITAGIS',
+        });
+        var osm = new OpenStreetMap({
+            title: 'OpenStreetMap',
+            id: constName.OSM,
+            // visible: false
+        });
+        map.add(osm);
+        map.add(baseMap);
+        let worldimagery = new WebTileLayer({
+            id: 'worldimagery',
+            urlTemplate: 'https://mt1.google.com/vt/lyrs=y&x={col}&y={row}&z={level}',
+            title: 'Ảnh vệ tinh',
+            visible: false,
+        });
+        map.add(worldimagery);
+        switchBasemap([baseMap, osm, worldimagery])
 
-            function switchBasemap(basemaps) {
-                basemaps.forEach(function (f) {
-                    f.watch('visible', watchVisible)
-                })
-
-                function watchVisible(newValue, oldValue, property, target) {
-                    if (newValue) {
-                        basemaps.forEach(function (f) {
-                            if (f !== target)
-                                f.visible = false;
-                        })
-                    }
-                }
-            }
-            var view = new MapView({
-                container: "map",
-                map: map,
-                ui: {
-                    components: ["zoom"],
-                    padding: 7
-                },
-                zoom: mapconfigs.zoom, // Sets the zoom level based on level of detail (LOD)
-                center: mapconfigs.center, // Sets the center point  of view in lon/lat
-            });
-            view.systemVariable = new SystemStatusObject();
-            view.systemVariable.user = resultRequest.data;
-            kendo.bind($("#menu"), kendo.observable({
-                onClickQLTK: function () {
-                    location.href = "/so-tttt/quan-ly-tai-khoan-nhom-quyen?m=tai-khoan"
-                }
-            }))
-
-            if (view.systemVariable.user.Capabilities.some(s => s === "QLTKNQ-QLTK")) {
-                let collapseMenu_HeThong = $("<div/>", {
-                    class: "esri-widget esri-widget-button",
-                    html: `
-            <span class="esri-icon-settings"></span>
-            `
-                }).appendTo(document.body);
-                var quanLyHeThongWnd = $("<div/>").kendoWindow({
-                    title: "Quản lý hệ thống",
-                    content: "/so-tttt/quan-ly-tai-khoan-nhom-quyen?m=tai-khoan",
-                    visible: false,
-                    maxHeight: "100vh",
-                    maxWidth: "100%",
-                    actions: ["Maximize", "Minimize", "Close"]
-                }).data("kendoWindow");
-                collapseMenu_HeThong.click(function () {
-                    quanLyHeThongWnd.center().open();
-                });
-                view.ui.add(collapseMenu_HeThong[0], "top-left")
-            }
-
-            let wndDoiMatKhau = renderDoiMatKhau();
-            $("#btn-change-pwd").click(function () {
-                wndDoiMatKhau.center().open();
-            });
-
-            var expandTools = new ExpandTools(view, {
-                position: 'top-right',
-            });
-            let gr = new GroupLayer({
-                title: 'Dữ liệu chuyên đề',
-                id: constName.CHUYEN_DE_HT
-            });
-            map.add(gr);
-            for (let layerCfg of view.systemVariable.user.Layers) {
-                if (layerCfg.groupLayer === 'chuyendehientrang' && layerCfg.permission.view && layerCfg.id == constName.TramBTS) {
-                    let customGroup = new GroupLayer({
-                        title: "Trạm BTS",
-                        id: "nhomTramBTS"
-                    });
-                    var dsDN = [{
-                        name: "GTL",
-                        title: "GTel",
-                        name_img: 'gtel'
-                    }, {
-                        name: "MBF",
-                        title: "Mobifone",
-                        name_img: 'mobifone'
-                    }, {
-                        name: "VNPT",
-                        title: "VNPT",
-                        name_img: "vina"
-                    }, {
-                        name: "VNM",
-                        title: "Vietnamobile",
-                        name_img: "vietnam"
-                    }, {
-                        name: "VTL",
-                        title: "Viettel",
-                        name_img: "viettel"
-                    }];
-                    var uniqueValueInfos = [];
-                    for (var i = 1; i <= 4; i++) {
-                        for (const dn of dsDN) {
-                            var uniqueValueInfo = {
-                                label: null,
-                                value: null,
-                                symbol: {
-                                    url: null,
-                                    type: "picture-marker",
-                                    width: "14px",
-                                    height: "14px"
-                                }
-                            };
-                            uniqueValueInfo.value = dn.name + ', ' + i;
-                            if (i == 1) {
-                                uniqueValueInfo.label = dn.title;
-                                uniqueValueInfo.create = true;
-                                uniqueValueInfo.symbol.url = "/images/bts/" + dn.name_img + "_yeucau.png";
-                            }
-                            if (i == 2) {
-                                uniqueValueInfo.symbol.url = "/images/bts/" + dn.name_img + "_yeucau_chapnhan.png";
-                            }
-                            if (i == 3) {
-                                uniqueValueInfo.symbol.url = "/images/bts/" + dn.name_img + ".png";
-                            }
-                            if (i == 4) {
-                                uniqueValueInfo.symbol.url = "/images/bts/" + dn.name_img + "_yeucau_kochapnhan.png";
-                            }
-                            uniqueValueInfos.push(uniqueValueInfo);
-                        }
-                    }
-                    var renderer = {
-                        type: "unique-value", // autocasts as new UniqueValueRenderer()
-                        field: "TenDoanhNghiep",
-                        field2: "TinhTrang",
-                        fieldDelimiter: ", ",
-                        uniqueValueInfos: uniqueValueInfos,
-                        defaultSymbol: {
-                            type: "picture-marker",
-                            url: "/images/bts/chuaxacdinh.png",
-                            width: "14px",
-                            height: "14px"
-                        },
-                        defaultLabel: "Chưa xác định"
-                    }
-                    layerCfg.listMode = "hide";
-                    let tramBTSLayer = new FeatureLayer(layerCfg);
-                    tramBTSLayer.renderer = renderer;
-                    gr.add(tramBTSLayer);
-                    let tramBTSDefinitionExpression = [];
-                    var vungPhuBTSTools = new VungPhuBTSTools(view);
-                    dsDN.forEach(f => {
-                        let btsDn = new GroupLayer({
-                            title: f.title,
-                            id: f.name
-                        });
-                        let vungPhuLayer = new GroupLayer({
-                            title: "Vùng phủ",
-                            id: "vungPhu_" + f.name,
-                            visible: false
-                        });
-                        let vungPhu2G = new Layer({
-                            id: "ThietBiLapDat2G", title: "2G", visible: false
-                        })
-                        let vungPhu3G = new Layer({
-                            id: "ThietBiLapDat3G", title: "3G", visible: false
-                        })
-                        let vungPhu4G = new Layer({
-                            id: "ThietBiLapDat4G", title: "4G", visible: false
-                        })
-                        function vungPhuThietBiWatch(newVal, oldVal, propertyName, target) {
-                            if (!target) return;
-                            if (newVal) {
-                                if (view.scale > tramBTSLayer.minScale) {
-                                    target.visible = false
-                                } else {
-                                    if (target.id)
-                                        vungPhuBTSTools.onlyBusiness(f.name, target.id);
-                                }
-
-                            } else {
-                                vungPhuBTSTools.clear(f.name, target.id);
-                            }
-                        }
-                        vungPhu2G.watch("visible", vungPhuThietBiWatch);
-                        vungPhu3G.watch("visible", vungPhuThietBiWatch);
-                        vungPhu4G.watch("visible", vungPhuThietBiWatch);
-                        vungPhuLayer.addMany([vungPhu4G, vungPhu3G, vungPhu2G]);
-                        vungPhuLayer.watch("visible", function (newVal, oldVal) {
-                            vungPhu2G.visible = newVal;
-                            vungPhu3G.visible = newVal;
-                            vungPhu4G.visible = newVal;
-                        });
-                        btsDn.add(vungPhuLayer);
-                        btsDn.watch("visible", function (newVal, oldVal) {
-                            if (!newVal) {
-                                tramBTSDefinitionExpression.push(`TenDoanhNghiep not like '${f.name}'`)
-                            } else {
-                                let index = tramBTSDefinitionExpression.indexOf(`TenDoanhNghiep not like '${f.name}'`);
-                                if (index > -1) {
-                                    tramBTSDefinitionExpression.splice(index, 1);
-                                }
-                            };
-                            if (tramBTSDefinitionExpression.length > 0) {
-                                tramBTSLayer.definitionExpression = tramBTSDefinitionExpression.join(" and ");
-                            } else {
-                                tramBTSLayer.definitionExpression = "1=1";
-                            }
-                            tramBTSLayer.refresh();
-                        })
-                        customGroup.add(btsDn)
-                    })
-                    customGroup.watch("visible", function (newVal, oldVal) {
-                        tramBTSLayer.visible = newVal;
-                    })
-                    gr.add(customGroup)
-                } else if (layerCfg.groupLayer === 'chuyendehientrang' && layerCfg.permission.view) {
-                    let fl = new FeatureLayer(layerCfg);
-                    gr.add(fl);
-                }
-            }
-            new Popup(view).startup();
-            var paneManager = new PaneManager({
-                element: "#pane-tools"
+        function switchBasemap(basemaps) {
+            basemaps.forEach(function (f) {
+                f.watch('visible', watchVisible)
             })
 
-            function addPane(pane) {
-                paneManager.add(pane);
+            function watchVisible(newValue, oldValue, property, target) {
+                if (newValue) {
+                    basemaps.forEach(function (f) {
+                        if (f !== target)
+                            f.visible = false;
+                    })
+                }
             }
+        }
+        var view = new MapView({
+            container: "map",
+            map: map,
+            ui: {
+                components: ["zoom"],
+                padding: 7
+            },
+            zoom: mapconfigs.zoom, // Sets the zoom level based on level of detail (LOD)
+            center: mapconfigs.center, // Sets the center point  of view in lon/lat
+        });
+        view.systemVariable = new SystemStatusObject();
+        view.systemVariable.user = resultRequest.data;
+        kendo.bind($("#menu"), kendo.observable({
+            onClickQLTK: function () {
+                location.href = "/so-tttt/quan-ly-tai-khoan-nhom-quyen?m=tai-khoan"
+            }
+        }))
 
-            //EXPAND TOOLS
-            var queryMethods = new QueryMethods(view, {});
-            queryMethods.on("click", addPane);
-            expandTools.append(queryMethods.container);
-            var layereditor = new LayerEditor(view);
-            layereditor.on("click", addPane);
-            expandTools.add(layereditor.content);
+        if (view.systemVariable.user.Capabilities.some(s => s === "QLTKNQ-QLTK")) {
+            let collapseMenu_HeThong = $("<div/>", {
+                class: "esri-widget esri-widget-button",
+                html: `
+            <span class="esri-icon-settings"></span>
+            `
+            }).appendTo(document.body);
+            var quanLyHeThongWnd = $("<div/>").kendoWindow({
+                title: "Quản lý hệ thống",
+                content: "/so-tttt/quan-ly-tai-khoan-nhom-quyen?m=tai-khoan",
+                visible: false,
+                maxHeight: "100vh",
+                maxWidth: "100%",
+                actions: ["Maximize", "Minimize", "Close"]
+            }).data("kendoWindow");
+            collapseMenu_HeThong.click(function () {
+                quanLyHeThongWnd.center().open();
+            });
+            view.ui.add(collapseMenu_HeThong[0], "top-left")
+        }
 
-            var layerList = new LayerList(view);
-            layerList.on("click", addPane);
-            expandTools.add(layerList.container)
-            var statistics = new Statistics(view);
-            statistics.on("click", addPane);
-            expandTools.add(statistics.container)
-
-            var printTool = new Print(view, {
-                position: 'top-right',
-            });
-            printTool.on("click", addPane);
-            expandTools.add(printTool.container);
-            //WIDGET TOOLS
-            view.ui.move(["zoom"], "bottom-left");
-            view.ui.add(new Home({
-                view: view,
-                title: "Phóng toàn tỉnh"
-            }), "bottom-left")
-            view.ui.add(new Locate({
-                view: view
-            }), "bottom-left")
-            var measure = new Measure(view);
-            view.ui.add(measure.container[0], "bottom-left")
-            var measureArea = new MeasureArea({
-                view: view
-            });
-            view.ui.add(measureArea.container[0], "bottom-left")
-            var vungPhuBTS = new VungPhuBTS({
-                view: view
-            });
-            view.ui.add(vungPhuBTS.container[0], "bottom-left");
-            var timViTriBTSThongMinh = new TimViTriBTSThongMinh(view);
-            view.ui.add(timViTriBTSThongMinh.container[0], "bottom-left")
-            kendo.ui.progress($("#page-content"), false);
+        let wndDoiMatKhau = renderDoiMatKhau();
+        $("#btn-change-pwd").click(function () {
+            wndDoiMatKhau.center().open();
         });
 
-        function renderDoiMatKhau() {
-            let divDoiMatKhau = $('<div/>', {
-                html: `<div class="k-popup-edit-form k-window-content k-content">
+        var expandTools = new ExpandTools(view, {
+            position: 'top-right',
+        });
+        let gr = new GroupLayer({
+            title: 'Dữ liệu chuyên đề',
+            id: constName.CHUYEN_DE_HT
+        });
+        map.add(gr);
+        for (let layerCfg of view.systemVariable.user.Layers) {
+            if (layerCfg.groupLayer === 'chuyendehientrang' && layerCfg.permission.view && layerCfg.id == constName.TramBTS) {
+                let customGroup = new GroupLayer({
+                    title: "Trạm BTS",
+                    id: "nhomTramBTS"
+                });
+                var dsDN = [{
+                    name: "GTL",
+                    title: "GTel",
+                    name_img: 'gtel'
+                }, {
+                    name: "MBF",
+                    title: "Mobifone",
+                    name_img: 'mobifone'
+                }, {
+                    name: "VNPT",
+                    title: "VNPT",
+                    name_img: "vina"
+                }, {
+                    name: "VNM",
+                    title: "Vietnamobile",
+                    name_img: "vietnam"
+                }, {
+                    name: "VTL",
+                    title: "Viettel",
+                    name_img: "viettel"
+                }];
+                var uniqueValueInfos = [];
+                for (var i = 1; i <= 4; i++) {
+                    for (const dn of dsDN) {
+                        var uniqueValueInfo = {
+                            label: null,
+                            value: null,
+                            symbol: {
+                                url: null,
+                                type: "picture-marker",
+                                width: "14px",
+                                height: "14px"
+                            }
+                        };
+                        uniqueValueInfo.value = dn.name + ', ' + i;
+                        if (i == 1) {
+                            uniqueValueInfo.label = dn.title;
+                            uniqueValueInfo.create = true;
+                            uniqueValueInfo.symbol.url = "/images/bts/" + dn.name_img + "_yeucau.png";
+                        }
+                        if (i == 2) {
+                            uniqueValueInfo.symbol.url = "/images/bts/" + dn.name_img + "_yeucau_chapnhan.png";
+                        }
+                        if (i == 3) {
+                            uniqueValueInfo.symbol.url = "/images/bts/" + dn.name_img + ".png";
+                        }
+                        if (i == 4) {
+                            uniqueValueInfo.symbol.url = "/images/bts/" + dn.name_img + "_yeucau_kochapnhan.png";
+                        }
+                        uniqueValueInfos.push(uniqueValueInfo);
+                    }
+                }
+                var renderer = {
+                    type: "unique-value", // autocasts as new UniqueValueRenderer()
+                    field: "TenDoanhNghiep",
+                    field2: "TinhTrang",
+                    fieldDelimiter: ", ",
+                    uniqueValueInfos: uniqueValueInfos,
+                    defaultSymbol: {
+                        type: "picture-marker",
+                        url: "/images/bts/chuaxacdinh.png",
+                        width: "14px",
+                        height: "14px"
+                    },
+                    defaultLabel: "Chưa xác định"
+                }
+                layerCfg.listMode = "hide";
+                let tramBTSLayer = new FeatureLayer(layerCfg);
+                tramBTSLayer.renderer = renderer;
+                gr.add(tramBTSLayer);
+                let tramBTSDefinitionExpression = [];
+                var vungPhuBTSTools = new VungPhuBTSTools(view);
+                dsDN.forEach(f => {
+                    let btsDn = new GroupLayer({
+                        title: f.title,
+                        id: f.name
+                    });
+                    let vungPhuLayer = new GroupLayer({
+                        title: "Vùng phủ",
+                        id: "vungPhu_" + f.name,
+                        visible: false
+                    });
+                    let vungPhu2G = new Layer({
+                        id: "ThietBiLapDat2G", title: "2G", visible: false
+                    })
+                    let vungPhu3G = new Layer({
+                        id: "ThietBiLapDat3G", title: "3G", visible: false
+                    })
+                    let vungPhu4G = new Layer({
+                        id: "ThietBiLapDat4G", title: "4G", visible: false
+                    })
+                    function vungPhuThietBiWatch(newVal, oldVal, propertyName, target) {
+                        if (!target) return;
+                        if (newVal) {
+                            if (view.scale > tramBTSLayer.minScale) {
+                                target.visible = false
+                            } else {
+                                if (target.id)
+                                    vungPhuBTSTools.onlyBusiness(f.name, target.id);
+                            }
+
+                        } else {
+                            vungPhuBTSTools.clear(f.name, target.id);
+                        }
+                    }
+                    vungPhu2G.watch("visible", vungPhuThietBiWatch);
+                    vungPhu3G.watch("visible", vungPhuThietBiWatch);
+                    vungPhu4G.watch("visible", vungPhuThietBiWatch);
+                    vungPhuLayer.addMany([vungPhu4G, vungPhu3G, vungPhu2G]);
+                    vungPhuLayer.watch("visible", function (newVal, oldVal) {
+                        vungPhu2G.visible = newVal;
+                        vungPhu3G.visible = newVal;
+                        vungPhu4G.visible = newVal;
+                    });
+                    btsDn.add(vungPhuLayer);
+                    btsDn.watch("visible", function (newVal, oldVal) {
+                        if (!newVal) {
+                            tramBTSDefinitionExpression.push(`TenDoanhNghiep not like '${f.name}'`)
+                        } else {
+                            let index = tramBTSDefinitionExpression.indexOf(`TenDoanhNghiep not like '${f.name}'`);
+                            if (index > -1) {
+                                tramBTSDefinitionExpression.splice(index, 1);
+                            }
+                        };
+                        if (tramBTSDefinitionExpression.length > 0) {
+                            tramBTSLayer.definitionExpression = tramBTSDefinitionExpression.join(" and ");
+                        } else {
+                            tramBTSLayer.definitionExpression = "1=1";
+                        }
+                        tramBTSLayer.refresh();
+                    })
+                    customGroup.add(btsDn)
+                })
+                customGroup.watch("visible", function (newVal, oldVal) {
+                    tramBTSLayer.visible = newVal;
+                })
+                gr.add(customGroup)
+            } else if (layerCfg.groupLayer === 'chuyendehientrang' && layerCfg.permission.view) {
+                let fl = new FeatureLayer(layerCfg);
+                gr.add(fl);
+            }
+        }
+        new Popup(view).startup();
+        var paneManager = new PaneManager({
+            element: "#pane-tools"
+        })
+
+        function addPane(pane) {
+            paneManager.add(pane);
+        }
+
+        //EXPAND TOOLS
+        var queryMethods = new QueryMethods(view, {});
+        queryMethods.on("click", addPane);
+        expandTools.append(queryMethods.container);
+        var layereditor = new LayerEditor(view);
+        layereditor.on("click", addPane);
+        expandTools.add(layereditor.content);
+
+        var layerList = new LayerList(view);
+        layerList.on("click", addPane);
+        expandTools.add(layerList.container)
+        var statistics = new Statistics(view);
+        statistics.on("click", addPane);
+        expandTools.add(statistics.container)
+
+        var printTool = new Print(view, {
+            position: 'top-right',
+        });
+        printTool.on("click", addPane);
+        expandTools.add(printTool.container);
+        //WIDGET TOOLS
+        view.ui.move(["zoom"], "bottom-left");
+        view.ui.add(new Home({
+            view: view,
+            title: "Phóng toàn tỉnh"
+        }), "bottom-left")
+        view.ui.add(new Locate({
+            view: view
+        }), "bottom-left")
+        var measure = new Measure(view);
+        view.ui.add(measure.container[0], "bottom-left")
+        var measureArea = new MeasureArea({
+            view: view
+        });
+        view.ui.add(measureArea.container[0], "bottom-left")
+        var vungPhuBTS = new VungPhuBTS({
+            view: view
+        });
+        view.ui.add(vungPhuBTS.container[0], "bottom-left");
+        var timViTriBTSThongMinh = new TimViTriBTSThongMinh(view);
+        view.ui.add(timViTriBTSThongMinh.container[0], "bottom-left")
+        kendo.ui.progress($("#page-content"), false);
+    });
+
+    function renderDoiMatKhau() {
+        let divDoiMatKhau = $('<div/>', {
+            html: `<div class="k-popup-edit-form k-window-content k-content">
             <div class="k-edit-form-container">
             <div class="k-edit-label">
                 <label for="oldPwd">Mật khẩu cũ</label>
@@ -383,60 +383,60 @@ require([
             </div>
         </div>
         </div>`
-            })
-            let model = kendo.observable({
-                oldPwd: null,
-                newPwd: null,
-                pwd: null,
-                onSubmit: function () {
-                    const oldPwd = model.get("oldPwd");
-                    const pwd = model.get("pwd");
-                    const newPwd = model.get("newPwd");
-                    if (!oldPwd || !pwd || !newPwd)
-                        alert('Vui lòng điền đầy đủ thông tin')
-                    else if (pwd !== newPwd)
-                        alert('Mật khẩu mới không giống nhau');
-                    else {
-                        kendo.ui.progress(divDoiMatKhau, true);
-                        $.post('/session').done(function (user) {
-                            if (user.Password !== oldPwd)
-                                kendo.alert('Mật khẩu cũ không chính xác');
-                            else {
-                                $.ajax({
-                                    type: 'put',
-                                    url: '/rest/sys_account',
-                                    data: {
-                                        ID: user.ID,
-                                        Password: newPwd
-                                    },
-                                    dataType: 'json',
-                                    success: function (results) {
-                                        wndChangePwd.close();
-                                        kendo.alert('Đổi mật khẩu thành công');
-                                    },
-                                    error: function (err) {
-                                        kendo.alert('Có lỗi xảy ra trong quá trình xử lý, vui lòng thử lại');
-                                    }
-                                })
-                            }
-                            kendo.ui.progress(divDoiMatKhau, false);
-                        })
-                    }
-                },
-                onCancel: function () {
-                    wndChangePwd.close();
+        })
+        let model = kendo.observable({
+            oldPwd: null,
+            newPwd: null,
+            pwd: null,
+            onSubmit: function () {
+                const oldPwd = model.get("oldPwd");
+                const pwd = model.get("pwd");
+                const newPwd = model.get("newPwd");
+                if (!oldPwd || !pwd || !newPwd)
+                    alert('Vui lòng điền đầy đủ thông tin')
+                else if (pwd !== newPwd)
+                    alert('Mật khẩu mới không giống nhau');
+                else {
+                    kendo.ui.progress(divDoiMatKhau, true);
+                    $.post('/session').done(function (user) {
+                        if (user.Password !== oldPwd)
+                            kendo.alert('Mật khẩu cũ không chính xác');
+                        else {
+                            $.ajax({
+                                type: 'put',
+                                url: '/rest/sys_account',
+                                data: {
+                                    ID: user.ID,
+                                    Password: newPwd
+                                },
+                                dataType: 'json',
+                                success: function (results) {
+                                    wndChangePwd.close();
+                                    kendo.alert('Đổi mật khẩu thành công');
+                                },
+                                error: function (err) {
+                                    kendo.alert('Có lỗi xảy ra trong quá trình xử lý, vui lòng thử lại');
+                                }
+                            })
+                        }
+                        kendo.ui.progress(divDoiMatKhau, false);
+                    })
                 }
-            });
+            },
+            onCancel: function () {
+                wndChangePwd.close();
+            }
+        });
 
-            let wndChangePwd = divDoiMatKhau.kendoWindow({
-                title: "Đổi mật khẩu",
-                visible: false,
-                actions: [
-                    "Close"
-                ],
+        let wndChangePwd = divDoiMatKhau.kendoWindow({
+            title: "Đổi mật khẩu",
+            visible: false,
+            actions: [
+                "Close"
+            ],
 
-            }).data("kendoWindow");
-            kendo.bind(divDoiMatKhau, model);
-            return wndChangePwd;
-        }
-    });
+        }).data("kendoWindow");
+        kendo.bind(divDoiMatKhau, model);
+        return wndChangePwd;
+    }
+});

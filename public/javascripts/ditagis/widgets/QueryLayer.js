@@ -1,6 +1,6 @@
 define(["require", "exports", "../core/Base", "../toolview/TableWnd",
-    "ditagis/widgets/ReportObjects", "esri/tasks/QueryTask"
-  ],
+  "ditagis/widgets/ReportObjects", "esri/tasks/QueryTask"
+],
   function (require, exports, Base, TableWnd, ReportObjects, QueryTask) {
     "use strict";
     class QueryLayer extends Base {
@@ -14,7 +14,7 @@ define(["require", "exports", "../core/Base", "../toolview/TableWnd",
         };
         this.layerListContent = [];
         this.hanhChinhXa = new QueryTask({
-          url: "http://ditagis.com:6080/arcgis/rest/services/BinhDinh_BuuChinhVienThong/HeThongVienThong_DuLieuNen/MapServer/4"
+          url: "http://103.74.116.95:6080/arcgis/rest/services/BinhDinh_BuuChinhVienThong/HeThongVienThong_DuLieuNen/MapServer/4"
         })
         this.displayFields = {
           // TramBTS:["MaTram","TenTram","TenDoanhNghiep","DoCaoTram","LoaiTram","LoaiAngTen","HuyenTp","XaPhuong"],
@@ -59,7 +59,7 @@ define(["require", "exports", "../core/Base", "../toolview/TableWnd",
               }
             });
             if (field.name === 'HuyenTXTP') {
-              $.get("http://ditagis.com:6080/arcgis/rest/services/BinhDinh_BuuChinhVienThong/HeThongVienThong_DuLieuNen/MapServer/7/query?where=1%3D1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=TenHuyenTp,MaHuyenTp&returnGeometry=false&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&resultOffset=&resultRecordCount=&f=json").done(function (res) {
+              $.get("http://103.74.116.95:6080/arcgis/rest/services/BinhDinh_BuuChinhVienThong/HeThongVienThong_DuLieuNen/MapServer/7/query?where=1%3D1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=TenHuyenTp,MaHuyenTp&returnGeometry=false&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&resultOffset=&resultRecordCount=&f=json").done(function (res) {
                 res = JSON.parse(res);
                 input.kendoComboBox({
                   dataTextField: "TenHuyenTp",

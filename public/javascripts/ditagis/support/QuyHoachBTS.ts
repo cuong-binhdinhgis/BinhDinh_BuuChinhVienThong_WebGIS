@@ -20,9 +20,9 @@ class QuyHoachBTS extends Base {
     super();
     this.view = view;
 
-    this.quyHoachBTS = new FeatureTable({ url: "http://ditagis.com:6080/arcgis/rest/services/BinhDinh_BuuChinhVienThong/HeThongVienThong_DuLieuNen/MapServer/1" });
+    this.quyHoachBTS = new FeatureTable({ url: "http://103.74.116.95:6080/arcgis/rest/services/BinhDinh_BuuChinhVienThong/HeThongVienThong_DuLieuNen/MapServer/1" });
     this.quyHoachBTSVung = new QueryTask({
-      url: "http://ditagis.com:6080/arcgis/rest/services/BinhDinh_BuuChinhVienThong/HeThongVienThong_DuLieuNen/MapServer/0"
+      url: "http://103.74.116.95:6080/arcgis/rest/services/BinhDinh_BuuChinhVienThong/HeThongVienThong_DuLieuNen/MapServer/0"
     })
   }
 
